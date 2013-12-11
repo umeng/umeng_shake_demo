@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Original file: /home/mrsimple/umeng-workspace/UmengPlayerDemo/UmengShakeDemo/src/com/sina/sso/RemoteSSO.aidl
+ * Original file: /home/mrsimple/umeng-workspace/UmengPlubPlayerDemo/UmengShakeDemo/src/com/sina/sso/RemoteSSO.aidl
  */
 package com.sina.sso;
 public interface RemoteSSO extends android.os.IInterface

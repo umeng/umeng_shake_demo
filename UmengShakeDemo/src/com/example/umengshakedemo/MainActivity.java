@@ -1,8 +1,21 @@
 package com.example.umengshakedemo;
 
+import io.vov.vitamio.LibsChecker;
+import io.vov.vitamio.MediaPlayer;
+import io.vov.vitamio.MediaPlayer.OnBufferingUpdateListener;
+import io.vov.vitamio.MediaPlayer.OnCompletionListener;
+import io.vov.vitamio.MediaPlayer.OnPreparedListener;
+import io.vov.vitamio.MediaPlayer.OnVideoSizeChangedListener;
+
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
+import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
 import android.hardware.SensorEvent;
 import android.media.AudioManager;
@@ -26,16 +39,6 @@ import com.umeng.socialize.sensor.controller.impl.UMShakeServiceFactory;
 import com.umeng.socialize.sso.QZoneSsoHandler;
 import com.umeng.socialize.sso.SinaSsoHandler;
 import com.umeng.socialize.sso.TencentWBSsoHandler;
-
-import io.vov.vitamio.LibsChecker;
-import io.vov.vitamio.MediaPlayer;
-import io.vov.vitamio.MediaPlayer.OnBufferingUpdateListener;
-import io.vov.vitamio.MediaPlayer.OnCompletionListener;
-import io.vov.vitamio.MediaPlayer.OnPreparedListener;
-import io.vov.vitamio.MediaPlayer.OnVideoSizeChangedListener;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @ClassName: MainActivity
@@ -94,6 +97,7 @@ public class MainActivity extends Activity implements
 			Log.d(TAG, "#### lib载入失败.");
 			return;
 		}
+		// this.getWindow().requestFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.activity_main);
 
 		mSurfaceView = (SurfaceView) findViewById(R.id.surface);
@@ -214,10 +218,37 @@ public class MainActivity extends Activity implements
 		@Override
 		public Bitmap getBitmap() {
 			if (mMediaPlayer != null) {
-				return mMediaPlayer.getCurrentFrame();
+				Bitmap bmp = mMediaPlayer.getCurrentFrame();
+				if (bmp == null) {
+					return null;
+				}
+
+				// 使用Vitamio获取截图，分享到社交平台时会出现条纹，目前不知道是什么原因.
+				// 如果您的截图分享没有任何问题， 则不需要做这一步. ( 添加这一步会造成摇一摇动画不流畅 )
+				Bitmap scrshot = compressBitmap(bmp);
+				return scrshot;
+
 			}
 			return null;
 		}
+	}
+
+	/**
+	 * 使用Vitamio获取截图，分享到社交平台时会出现条纹，目前不知道是什么原因. 如果您的截图分享没有任何问题， 
+	 * 则不需要做这一步.
+	 * 
+	 * @param bmp
+	 * @return
+	 */
+	private Bitmap compressBitmap(Bitmap bmp) {
+
+		// 将Vitamio获取截图压缩到outStream
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		bmp.compress(CompressFormat.JPEG, 100, outStream);
+		byte[] data = outStream.toByteArray();
+		// 再从outStream解析一张图片
+		Bitmap scrshot = BitmapFactory.decodeByteArray(data, 0, data.length);
+		return scrshot;
 	}
 
 	/**
@@ -269,6 +300,9 @@ public class MainActivity extends Activity implements
 		try {
 			// 视频的url地址, 也可以是本地的视频路径
 			mVideoPath = "http://blog.umeng.com/images/video.mp4";
+			// mVideoPath =
+			// "http://124.228.196.59/videos/movie/20121011/806a29cb723f8920dea40516f9cc018a.mp4";
+			// mVideoPath = "/mnt/sdcard/video.mp4";
 			// Create a new media player and set the listeners
 			mMediaPlayer = new MediaPlayer(this);
 			mMediaPlayer.setDataSource(mVideoPath);
