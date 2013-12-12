@@ -181,6 +181,10 @@ public class MainActivity extends Activity implements
      * @throws
      */
     private void configSocialSso() {
+
+        // 添加微信支持
+        mSocialController.getConfig().supportWXPlatform(MainActivity.this,
+                "wx9f162ffbf5731350", "http://www.umeng.com/social");
         // 添加QQ平台， 并且设置SSO授权
         mSocialController.getConfig().supportQQPlatform(MainActivity.this,
                 "http://www.umeng.com/social");
@@ -346,8 +350,8 @@ public class MainActivity extends Activity implements
         List<SHARE_MEDIA> platforms = new ArrayList<SHARE_MEDIA>();
         platforms.add(SHARE_MEDIA.SINA);
         platforms.add(SHARE_MEDIA.QZONE);
-        platforms.add(SHARE_MEDIA.TENCENT);
-        platforms.add(SHARE_MEDIA.RENREN);
+        platforms.add(SHARE_MEDIA.WEIXIN);
+        platforms.add(SHARE_MEDIA.WEIXIN_CIRCLE);
         platforms.add(SHARE_MEDIA.QQ);
         // 设置摇一摇分享的文字内容
         mShakeController.setShareContent("精彩瞬间，摇摇分享 -- 来自友盟社会化组件." + new Date().toString());
@@ -509,7 +513,7 @@ public class MainActivity extends Activity implements
      */
     private void releaseMediaPlayer() {
         if (mMediaPlayer != null) {
-            mPosition = mMediaPlayer.getCurrentPosition() ;
+            mPosition = mMediaPlayer.getCurrentPosition();
             mMediaPlayer.release();
             mMediaPlayer = null;
         }
@@ -612,10 +616,10 @@ public class MainActivity extends Activity implements
      */
     private void showSeekbar() {
         mVideoSeekBar.setVisibility(View.VISIBLE);
+        mHandler.removeMessages(HIDE_SEEKBAR_MSG );
         // 用户点击视频， 3秒后隐藏进度条
         Message msg = mHandler.obtainMessage(HIDE_SEEKBAR_MSG);
         msg.what = HIDE_SEEKBAR_MSG;
         mHandler.sendMessageDelayed(msg, HIDE_MSG_DELAY);
     }
-
 }
