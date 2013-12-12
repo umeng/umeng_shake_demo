@@ -13,25 +13,35 @@
         android:layout_gravity="center" >
     </SurfaceView>
 
-    <ImageButton
-        android:id="@+id/play_btn"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_gravity="center"
-        android:alpha="0.7"
-        android:background="@drawable/gtk_media_play"
-        android:contentDescription="@string/app_name" />
+    <!--  -->
 
-    <SeekBar
-        android:id="@+id/video_seekbar"
+    <LinearLayout
+        android:id="@+id/seekbar_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:layout_marginBottom="5dp"
-        android:layout_marginLeft="30dp"
-        android:layout_marginRight="30dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
         android:layout_marginTop="5dp"
-        android:progressDrawable="@drawable/seekbar_style"
-        android:visibility="gone" />
+        android:alpha="0.8"
+        android:orientation="horizontal" >
+
+        <ImageButton
+            android:id="@+id/play_btn"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:background="@drawable/play"
+            android:contentDescription="@string/app_name" />
+
+        <SeekBar
+            android:id="@+id/video_seekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginLeft="10dp"
+            android:progressDrawable="@drawable/seekbar_style" />
+    </LinearLayout>
 
 </FrameLayout>

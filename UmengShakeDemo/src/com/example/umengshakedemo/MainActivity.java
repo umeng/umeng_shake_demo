@@ -20,6 +20,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.Toast;
@@ -80,6 +81,11 @@ public class MainActivity extends Activity implements
     private SurfaceHolder mSurfaceHolder = null;
 
     private ImageButton mPlayButton = null;
+
+    /**
+     * 
+     */
+    private LinearLayout mSeekbarLayout = null;
     /**
      * 进度条
      */
@@ -180,10 +186,16 @@ public class MainActivity extends Activity implements
             @Override
             public void onClick(View v) {
                 if (mMediaPlayer != null) {
-                    mMediaPlayer.start();
+                    if (mMediaPlayer.isPlaying()) {
+                        pause();
+                    } else {
+                        play();
+                    }
                 }
             }
         });
+
+        mSeekbarLayout = (LinearLayout) findViewById(R.id.seekbar_layout);
         // 初始化进度条
         initSeekBar();
     }
@@ -273,7 +285,7 @@ public class MainActivity extends Activity implements
                 // 更新UI
                 updateUI((int) millseconds);
             } else if (msg.what == HIDE_SEEKBAR_MSG) {
-                mVideoSeekBar.setVisibility(View.GONE);
+                mSeekbarLayout.setVisibility(View.GONE);
             }
         };
     };
@@ -288,11 +300,6 @@ public class MainActivity extends Activity implements
         float total = (float) mVideoDuration;
         int progress = (int) ((millseconds / total) * 100);
         mVideoSeekBar.setProgress(progress);
-        if (!mMediaPlayer.isPlaying()) {
-            mPlayButton.setVisibility(View.VISIBLE);
-        } else {
-            mPlayButton.setVisibility(View.GONE);
-        }
     }
 
     /**
@@ -460,7 +467,7 @@ public class MainActivity extends Activity implements
             Toast.makeText(MainActivity.this, "用户摇一摇", Toast.LENGTH_SHORT)
                     .show();
             // 暂停视频
-            mMediaPlayer.pause();
+            pause();
         }
 
         @Override
@@ -473,7 +480,7 @@ public class MainActivity extends Activity implements
                         Toast.LENGTH_SHORT).show();
             }
             // 重新开始
-            mMediaPlayer.start();
+            play();
         }
     }
 
@@ -499,10 +506,34 @@ public class MainActivity extends Activity implements
             mMediaPlayer.getMetadata();
             mMediaPlayer.seekTo(mPosition);
             setVolumeControlStream(AudioManager.STREAM_MUSIC);
-
         } catch (Exception e) {
             Log.e(TAG, "error: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * @Title: play
+     * @Description: 播放视频
+     * @throws
+     */
+    private void play() {
+        Log.d(TAG, "### Click play button");
+        mMediaPlayer.start();
+        mPlayButton.setBackgroundResource(R.drawable.pause);
+    }
+
+    /**
+     * 
+     */
+    /**
+     * @Title: pause
+     * @Description: 暂停视频
+     * @throws
+     */
+    private void pause() {
+        Log.d(TAG, "### Click pause button");
+        mMediaPlayer.pause();
+        mPlayButton.setBackgroundResource(R.drawable.play);
     }
 
     /**
@@ -514,7 +545,7 @@ public class MainActivity extends Activity implements
         Log.v(TAG, "startVideoPlayback");
         mSurfaceHolder.setFixedSize(mVideoWidth, mVideoHeight);
         mSurfaceHolder.setKeepScreenOn(true);
-        mMediaPlayer.start();
+        play();
         if (mTimer == null) {
             mTimer = new Timer();
             // 设置定时器
@@ -566,6 +597,7 @@ public class MainActivity extends Activity implements
 
     public void onCompletion(MediaPlayer arg0) {
         Log.d(TAG, "视频播放结束");
+        pause();
     }
 
     public void onVideoSizeChanged(MediaPlayer mp, int width, int height) {
@@ -592,12 +624,12 @@ public class MainActivity extends Activity implements
     }
 
     public void surfaceChanged(SurfaceHolder surfaceholder, int i, int j, int k) {
-        Log.d(TAG, "surfaceChanged called");
+        Log.d(TAG, "### surfaceChanged called");
 
     }
 
     public void surfaceDestroyed(SurfaceHolder surfaceholder) {
-        Log.d(TAG, "surfaceDestroyed called");
+        Log.d(TAG, "### surfaceDestroyed called");
     }
 
     /**
@@ -609,15 +641,15 @@ public class MainActivity extends Activity implements
      * @see android.view.SurfaceHolder.Callback#surfaceCreated(android.view.SurfaceHolder)
      */
     public void surfaceCreated(SurfaceHolder holder) {
-        Log.d(TAG, "surfaceCreated called");
+        Log.d(TAG, "#### surfaceCreated called");
         playVideo();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        releaseMediaPlayer();
-        cleanUp();
+        // releaseMediaPlayer();
+        // cleanUp();
     }
 
     @Override
@@ -633,7 +665,7 @@ public class MainActivity extends Activity implements
      * @throws
      */
     private void showSeekbar() {
-        mVideoSeekBar.setVisibility(View.VISIBLE);
+        mSeekbarLayout.setVisibility(View.VISIBLE);
         mHandler.removeMessages(HIDE_SEEKBAR_MSG);
         // 用户点击视频， 3秒后隐藏进度条
         Message msg = mHandler.obtainMessage(HIDE_SEEKBAR_MSG);
