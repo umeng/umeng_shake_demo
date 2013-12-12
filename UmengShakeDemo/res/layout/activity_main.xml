@@ -13,22 +13,14 @@
         android:layout_gravity="center" >
     </SurfaceView>
 
-    <!--
-    <io.vov.vitamio.widget.CenterLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="vertical" >
-
-        <SurfaceView
-            android:id="@+id/surface"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center" >
-        </SurfaceView>
-        
-    </io.vov.vitamio.widget.CenterLayout>
-    -->
+    <ImageButton
+        android:id="@+id/play_btn"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="center"
+        android:alpha="0.7"
+        android:background="@drawable/gtk_media_play"
+        android:contentDescription="@string/app_name" />
 
     <SeekBar
         android:id="@+id/video_seekbar"

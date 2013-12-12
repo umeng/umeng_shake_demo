@@ -19,6 +19,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
+import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.Toast;
@@ -78,6 +79,7 @@ public class MainActivity extends Activity implements
     private SurfaceView mSurfaceView = null;
     private SurfaceHolder mSurfaceHolder = null;
 
+    private ImageButton mPlayButton = null;
     /**
      * 进度条
      */
@@ -152,8 +154,6 @@ public class MainActivity extends Activity implements
         initSurfaceView();
         // 配置SSO, 并且要覆写onActivityResult方法进行回调，否则无法授权成功
         configSocialSso();
-        // 初始化进度条
-        initSeekBar();
     }
 
     /**
@@ -173,6 +173,19 @@ public class MainActivity extends Activity implements
         mSurfaceHolder = mSurfaceView.getHolder();
         mSurfaceHolder.addCallback(this);
         mSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
+
+        mPlayButton = (ImageButton) findViewById(R.id.play_btn);
+        mPlayButton.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                if (mMediaPlayer != null) {
+                    mMediaPlayer.start();
+                }
+            }
+        });
+        // 初始化进度条
+        initSeekBar();
     }
 
     /**
@@ -275,6 +288,11 @@ public class MainActivity extends Activity implements
         float total = (float) mVideoDuration;
         int progress = (int) ((millseconds / total) * 100);
         mVideoSeekBar.setProgress(progress);
+        if (!mMediaPlayer.isPlaying()) {
+            mPlayButton.setVisibility(View.VISIBLE);
+        } else {
+            mPlayButton.setVisibility(View.GONE);
+        }
     }
 
     /**
@@ -616,7 +634,7 @@ public class MainActivity extends Activity implements
      */
     private void showSeekbar() {
         mVideoSeekBar.setVisibility(View.VISIBLE);
-        mHandler.removeMessages(HIDE_SEEKBAR_MSG );
+        mHandler.removeMessages(HIDE_SEEKBAR_MSG);
         // 用户点击视频， 3秒后隐藏进度条
         Message msg = mHandler.obtainMessage(HIDE_SEEKBAR_MSG);
         msg.what = HIDE_SEEKBAR_MSG;
