@@ -338,6 +338,8 @@ public class MainActivity extends Activity implements
         mHandler.removeMessages(UPDATE_SEEKBAR_MSG);
         // 注销摇一摇传感器
         mShakeController.unregisterShakeListener(MainActivity.this);
+        releaseMediaPlayer();
+        cleanUp();
     }
 
     /**
@@ -648,8 +650,8 @@ public class MainActivity extends Activity implements
     @Override
     protected void onPause() {
         super.onPause();
-        // releaseMediaPlayer();
-        // cleanUp();
+//         releaseMediaPlayer();
+//         cleanUp();
     }
 
     @Override
