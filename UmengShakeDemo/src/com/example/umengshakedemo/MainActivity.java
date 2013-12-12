@@ -1,17 +1,7 @@
 
 package com.example.umengshakedemo;
 
-import io.vov.vitamio.LibsChecker;
-import io.vov.vitamio.MediaPlayer;
-import io.vov.vitamio.MediaPlayer.OnBufferingUpdateListener;
-import io.vov.vitamio.MediaPlayer.OnCompletionListener;
-import io.vov.vitamio.MediaPlayer.OnPreparedListener;
-import io.vov.vitamio.MediaPlayer.OnVideoSizeChangedListener;
-
-import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.List;
-
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -21,20 +11,26 @@ import android.graphics.PixelFormat;
 import android.hardware.SensorEvent;
 import android.media.AudioManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.Window;
+import android.widget.SeekBar;
+import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.Toast;
 
 import com.umeng.scrshot.adapter.UMBaseAdapter;
 import com.umeng.socialize.bean.SHARE_MEDIA;
 import com.umeng.socialize.bean.SocializeEntity;
+import com.umeng.socialize.bean.StatusCode;
 import com.umeng.socialize.controller.RequestType;
 import com.umeng.socialize.controller.UMServiceFactory;
 import com.umeng.socialize.controller.UMSocialService;
 import com.umeng.socialize.controller.UMSsoHandler;
-import com.umeng.socialize.media.QQShareContent;
-import com.umeng.socialize.media.UMImage;
 import com.umeng.socialize.sensor.UMSensor.OnSensorListener;
 import com.umeng.socialize.sensor.UMSensor.WhitchButton;
 import com.umeng.socialize.sensor.controller.UMShakeService;
@@ -42,6 +38,20 @@ import com.umeng.socialize.sensor.controller.impl.UMShakeServiceFactory;
 import com.umeng.socialize.sso.QZoneSsoHandler;
 import com.umeng.socialize.sso.SinaSsoHandler;
 import com.umeng.socialize.sso.TencentWBSsoHandler;
+
+import io.vov.vitamio.LibsChecker;
+import io.vov.vitamio.MediaPlayer;
+import io.vov.vitamio.MediaPlayer.OnBufferingUpdateListener;
+import io.vov.vitamio.MediaPlayer.OnCompletionListener;
+import io.vov.vitamio.MediaPlayer.OnPreparedListener;
+import io.vov.vitamio.MediaPlayer.OnVideoSizeChangedListener;
+
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * @ClassName: MainActivity
@@ -67,6 +77,17 @@ public class MainActivity extends Activity implements
      */
     private SurfaceView mSurfaceView = null;
     private SurfaceHolder mSurfaceHolder = null;
+
+    /**
+     * 进度条
+     */
+    private SeekBar mVideoSeekBar = null;
+    /**
+     * 视频总时间
+     */
+    private long mVideoDuration = -1;
+
+    private static long mPosition = 0;
     /**
      * 视频的路径或者url
      */
@@ -74,6 +95,25 @@ public class MainActivity extends Activity implements
     private boolean mIsVideoSizeKnown = false;
     private boolean mIsVideoReadyToBePlayed = false;
 
+    /**
+     * 定时器， 用于更新进度条
+     */
+    private Timer mTimer = null;
+    /**
+     * 更新进度条的消息
+     */
+    private final int UPDATE_SEEKBAR_MSG = 123;
+    /**
+     * 每个一秒更新
+     */
+    private final int UPDATE_INTERVAL = 1000;
+
+    /**
+     * 
+     */
+    private final int HIDE_SEEKBAR_MSG = 456;
+
+    private final int HIDE_MSG_DELAY = 3000;
     /**
      * 控制器描述符
      */
@@ -91,7 +131,12 @@ public class MainActivity extends Activity implements
             .getShakeService(UMENG_DESCRIPTION);
 
     /**
-     * Called when the activity is first created.
+     * (非 Javadoc)
+     * 
+     * @Title: onCreate
+     * @Description: onCreate
+     * @param icicle
+     * @see android.app.Activity#onCreate(android.os.Bundle)
      */
     @Override
     public void onCreate(Bundle icicle) {
@@ -100,16 +145,34 @@ public class MainActivity extends Activity implements
             Log.d(TAG, "#### lib载入失败.");
             return;
         }
-        // this.getWindow().requestFeature(Window.FEATURE_NO_TITLE);
+        this.getWindow().requestFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
 
+        // 初始化SurfaceView
+        initSurfaceView();
+        // 配置SSO, 并且要覆写onActivityResult方法进行回调，否则无法授权成功
+        configSocialSso();
+        // 初始化进度条
+        initSeekBar();
+    }
+
+    /**
+     * @Title: initSurfaceView
+     * @Description: 初始化SurfaceView
+     * @throws
+     */
+    private void initSurfaceView() {
         mSurfaceView = (SurfaceView) findViewById(R.id.surface);
+        mSurfaceView.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                showSeekbar();
+            }
+        });
         mSurfaceHolder = mSurfaceView.getHolder();
         mSurfaceHolder.addCallback(this);
         mSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
-
-        // 配置SSO, 并且要覆写onActivityResult方法进行回调，否则无法授权成功
-        configSocialSso();
     }
 
     /**
@@ -131,6 +194,86 @@ public class MainActivity extends Activity implements
     }
 
     /**
+     * @Title: initSeekBar
+     * @Description: 初始化进度条
+     * @throws
+     */
+    private void initSeekBar() {
+        mVideoSeekBar = (SeekBar) findViewById(R.id.video_seekbar);
+        mVideoSeekBar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+
+            /**
+             * @Description: 用户拖动进度条
+             * @param seekBar
+             */
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                int progress = seekBar.getProgress();
+                int duration = (int) mVideoDuration;
+                int position = progress * duration / 100;
+                if (mMediaPlayer != null) {
+                    mMediaPlayer.seekTo(position);
+                }
+                updateUI(position);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress,
+                    boolean fromUser) {
+            }
+        });
+        showSeekbar();
+    }
+
+    /**
+     * 通过定时器和Handler来更新进度条
+     */
+    private class VideoTimerTask extends TimerTask {
+
+        @Override
+        public void run() {
+            if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
+                Message msg = Message.obtain(mHandler);
+                msg.what = UPDATE_SEEKBAR_MSG;
+                msg.obj = mMediaPlayer.getCurrentPosition();
+                mHandler.sendMessage(msg);
+            }
+        }
+
+    };
+
+    /**
+     * 处理各种消息
+     */
+    private final Handler mHandler = new Handler() {
+        public void handleMessage(android.os.Message msg) {
+            if (msg.what == UPDATE_SEEKBAR_MSG) {
+                long millseconds = (Long) msg.obj;
+                // 更新UI
+                updateUI((int) millseconds);
+            } else if (msg.what == HIDE_SEEKBAR_MSG) {
+                mVideoSeekBar.setVisibility(View.GONE);
+            }
+        };
+    };
+
+    /**
+     * @Title: updateUI
+     * @Description: 更新播放进度条和时间
+     * @param millseconds
+     * @throws
+     */
+    private void updateUI(int millseconds) {
+        float total = (float) mVideoDuration;
+        int progress = (int) ((millseconds / total) * 100);
+        mVideoSeekBar.setProgress(progress);
+    }
+
+    /**
      * (非 Javadoc)
      * 
      * @Title: onResume
@@ -142,6 +285,10 @@ public class MainActivity extends Activity implements
         super.onResume();
         // 注册摇一摇截屏分享
         registerShake();
+        if (mTimer == null) {
+            mTimer = new Timer();
+            mTimer.schedule(new VideoTimerTask(), 0, UPDATE_INTERVAL);
+        }
     }
 
     /**
@@ -154,6 +301,12 @@ public class MainActivity extends Activity implements
     @Override
     protected void onStop() {
         super.onStop();
+        if (mTimer != null) {
+            mTimer.cancel();
+            mTimer.purge();
+            mTimer = null;
+        }
+        mHandler.removeMessages(UPDATE_SEEKBAR_MSG);
         // 注销摇一摇传感器
         mShakeController.unregisterShakeListener(MainActivity.this);
     }
@@ -193,11 +346,11 @@ public class MainActivity extends Activity implements
         List<SHARE_MEDIA> platforms = new ArrayList<SHARE_MEDIA>();
         platforms.add(SHARE_MEDIA.SINA);
         platforms.add(SHARE_MEDIA.QZONE);
-        platforms.add(SHARE_MEDIA.QQ);
         platforms.add(SHARE_MEDIA.TENCENT);
         platforms.add(SHARE_MEDIA.RENREN);
+        platforms.add(SHARE_MEDIA.QQ);
         // 设置摇一摇分享的文字内容
-        mShakeController.setShareContent("精彩瞬间，摇摇分享  -- 来自友盟社会化组件.");
+        mShakeController.setShareContent("精彩瞬间，摇摇分享 -- 来自友盟社会化组件." + new Date().toString());
         // 注册摇一摇截屏分享， 自定义的VitamioAdapter,
         mShakeController.registerShakeListender(MainActivity.this,
                 new VitamioAdapter(), platforms, new VitamioListener());
@@ -226,7 +379,7 @@ public class MainActivity extends Activity implements
                     return null;
                 }
 
-                // 使用Vitamio获取截图，分享到社交平台时会出现条纹，目前不知道是什么原因.
+                // 使用Vitamio获取高清视频截图，分享到社交平台时会出现条纹.
                 // 如果您的截图分享没有任何问题， 则不需要做这一步. ( 添加这一步会造成摇一摇动画不流畅 )
                 Bitmap scrshot = compressBitmap(bmp);
                 return scrshot;
@@ -242,12 +395,17 @@ public class MainActivity extends Activity implements
      * @param bmp
      * @return
      */
+    @SuppressLint("NewApi")
     private Bitmap compressBitmap(Bitmap bmp) {
 
         // 将Vitamio获取截图压缩到outStream
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        bmp.compress(CompressFormat.JPEG, 100, outStream);
+        // 考虑到用户的网络速度,建议将图片压缩至70kb以下，保证图片上传的成功率.
+        bmp.compress(CompressFormat.JPEG, 30, outStream);
         byte[] data = outStream.toByteArray();
+        if (data != null && data.length > 0) {
+            Log.d(TAG, "### 图片大小 : " + data.length / 1024 + " KB");
+        }
         // 再从outStream解析一张图片
         Bitmap scrshot = BitmapFactory.decodeByteArray(data, 0, data.length);
         return scrshot;
@@ -261,9 +419,14 @@ public class MainActivity extends Activity implements
     private class VitamioListener implements OnSensorListener {
 
         @Override
-        public void onComplete(SHARE_MEDIA arg0, int arg1, SocializeEntity arg2) {
-            Toast.makeText(MainActivity.this, "分享成功", Toast.LENGTH_SHORT)
-                    .show();
+        public void onComplete(SHARE_MEDIA arg0, int code, SocializeEntity arg2) {
+            if (code == StatusCode.ST_CODE_SUCCESSED) {
+                Toast.makeText(MainActivity.this, "分享成功", Toast.LENGTH_SHORT)
+                        .show();
+            } else {
+                Toast.makeText(MainActivity.this, " 抱歉,您的网络不给力,请重试...", Toast.LENGTH_SHORT)
+                        .show();
+            }
         }
 
         @Override
@@ -302,9 +465,6 @@ public class MainActivity extends Activity implements
         try {
             // 视频的url地址, 也可以是本地的视频路径
             mVideoPath = "http://blog.umeng.com/images/video.mp4";
-            // mVideoPath =
-            // "http://124.228.196.59/videos/movie/20121011/806a29cb723f8920dea40516f9cc018a.mp4";
-            // mVideoPath = "/mnt/sdcard/video.mp4";
             // Create a new media player and set the listeners
             mMediaPlayer = new MediaPlayer(this);
             mMediaPlayer.setDataSource(mVideoPath);
@@ -315,6 +475,7 @@ public class MainActivity extends Activity implements
             mMediaPlayer.setOnPreparedListener(this);
             mMediaPlayer.setOnVideoSizeChangedListener(this);
             mMediaPlayer.getMetadata();
+            mMediaPlayer.seekTo(mPosition);
             setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
         } catch (Exception e) {
@@ -332,6 +493,13 @@ public class MainActivity extends Activity implements
         mSurfaceHolder.setFixedSize(mVideoWidth, mVideoHeight);
         mSurfaceHolder.setKeepScreenOn(true);
         mMediaPlayer.start();
+        if (mTimer == null) {
+            mTimer = new Timer();
+            // 设置定时器
+            mTimer.schedule(new VideoTimerTask(), 0, UPDATE_INTERVAL);
+        }
+        mVideoSeekBar.setVisibility(View.VISIBLE);
+        mVideoDuration = mMediaPlayer.getDuration();
     }
 
     /**
@@ -341,6 +509,7 @@ public class MainActivity extends Activity implements
      */
     private void releaseMediaPlayer() {
         if (mMediaPlayer != null) {
+            mPosition = mMediaPlayer.getCurrentPosition() ;
             mMediaPlayer.release();
             mMediaPlayer = null;
         }
@@ -369,12 +538,12 @@ public class MainActivity extends Activity implements
      *      int)
      */
     public void onBufferingUpdate(MediaPlayer arg0, int percent) {
-        Log.d(TAG, "onBufferingUpdate percent:" + percent);
+        // Log.d(TAG, "onBufferingUpdate percent:" + percent);
 
     }
 
     public void onCompletion(MediaPlayer arg0) {
-        Log.d(TAG, "onCompletion called");
+        Log.d(TAG, "视频播放结束");
     }
 
     public void onVideoSizeChanged(MediaPlayer mp, int width, int height) {
@@ -434,6 +603,19 @@ public class MainActivity extends Activity implements
         super.onDestroy();
         releaseMediaPlayer();
         cleanUp();
+    }
+
+    /**
+     * @Title: hideSeekbar
+     * @Description: 用户点击视频时，显示进度条， 三秒后隐藏
+     * @throws
+     */
+    private void showSeekbar() {
+        mVideoSeekBar.setVisibility(View.VISIBLE);
+        // 用户点击视频， 3秒后隐藏进度条
+        Message msg = mHandler.obtainMessage(HIDE_SEEKBAR_MSG);
+        msg.what = HIDE_SEEKBAR_MSG;
+        mHandler.sendMessageDelayed(msg, HIDE_MSG_DELAY);
     }
 
 }
