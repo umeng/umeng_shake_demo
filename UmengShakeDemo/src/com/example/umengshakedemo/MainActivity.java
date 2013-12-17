@@ -160,6 +160,7 @@ public class MainActivity extends Activity implements
         initSurfaceView();
         // 配置SSO, 并且要覆写onActivityResult方法进行回调，否则无法授权成功
         configSocialSso();
+
     }
 
     /**
@@ -209,6 +210,8 @@ public class MainActivity extends Activity implements
 
         // 添加微信支持
         mSocialController.getConfig().supportWXPlatform(MainActivity.this,
+                "wx9f162ffbf5731350", "http://www.umeng.com/social");
+        mSocialController.getConfig().supportWXCirclePlatform(MainActivity.this,
                 "wx9f162ffbf5731350", "http://www.umeng.com/social");
         // 添加QQ平台， 并且设置SSO授权
         mSocialController.getConfig().supportQQPlatform(MainActivity.this,
@@ -439,6 +442,8 @@ public class MainActivity extends Activity implements
         }
         // 再从outStream解析一张图片
         Bitmap scrshot = BitmapFactory.decodeByteArray(data, 0, data.length);
+        // Bitmap scrshot = BitmapFactory.decodeResource(getResources(),
+        // R.drawable.icon);
         return scrshot;
     }
 
@@ -650,8 +655,8 @@ public class MainActivity extends Activity implements
     @Override
     protected void onPause() {
         super.onPause();
-//         releaseMediaPlayer();
-//         cleanUp();
+        // releaseMediaPlayer();
+        // cleanUp();
     }
 
     @Override
