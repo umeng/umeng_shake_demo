@@ -471,21 +471,21 @@ public class MainActivity extends Activity implements
 
         @Override
         public void onActionComplete(SensorEvent arg0) {
-            Toast.makeText(MainActivity.this, "用户摇一摇", Toast.LENGTH_SHORT)
-                    .show();
+//            Toast.makeText(MainActivity.this, "用户摇一摇", Toast.LENGTH_SHORT)
+//                    .show();
             // 暂停视频
             pause();
         }
 
         @Override
         public void onButtonClick(WhitchButton button) {
-            if (button == WhitchButton.BUTTON_SHARE) {
-                Toast.makeText(MainActivity.this, "用户点击分享按钮",
-                        Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(MainActivity.this, "用户点击取消按钮",
-                        Toast.LENGTH_SHORT).show();
-            }
+//            if (button == WhitchButton.BUTTON_SHARE) {
+//                Toast.makeText(MainActivity.this, "用户点击分享按钮",
+//                        Toast.LENGTH_SHORT).show();
+//            } else {
+//                Toast.makeText(MainActivity.this, "用户点击取消按钮",
+//                        Toast.LENGTH_SHORT).show();
+//            }
             // 重新开始
             play();
         }
