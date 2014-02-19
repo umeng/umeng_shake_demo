@@ -31,7 +31,24 @@
             android:windowSoftInputMode="stateAlwaysHidden" />
 
         <!-- 腾讯SSO授权的Activity注册 -->
-        <activity android:name="com.tencent.tauth.AuthActivity" />
+        <activity
+            android:name="com.tencent.tauth.AuthActivity"
+            android:launchMode="singleTask"
+            android:noHistory="true" >
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="tencent100424468" /> <!-- 100498017 -->
+            </intent-filter>
+        </activity>
+        <activity android:name="com.tencent.plus.ImageActivity" />
+        <activity
+            android:name="com.tencent.connect.common.AssistActivity"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <!-- Socialize Activitys Start -->
         <activity
@@ -48,11 +65,18 @@
             android:windowSoftInputMode="stateVisible|adjustResize" >
         </activity>
 
+        <!-- 微信回调activity -->
+        <activity
+            android:name=".wxapi.WXEntryActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <meta-data
             android:name="UMENG_APPKEY"
             android:value="4eaee02c527015373b000003" >
         </meta-data>
-
         <meta-data
             android:name="UMENG_CHANNEL"
             android:value="Umeng" >

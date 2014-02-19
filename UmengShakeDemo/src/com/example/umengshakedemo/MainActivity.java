@@ -27,12 +27,14 @@ import android.widget.Toast;
 
 import com.umeng.scrshot.adapter.UMBaseAdapter;
 import com.umeng.socialize.bean.SHARE_MEDIA;
+import com.umeng.socialize.bean.SocializeConfig;
 import com.umeng.socialize.bean.SocializeEntity;
 import com.umeng.socialize.bean.StatusCode;
 import com.umeng.socialize.controller.RequestType;
 import com.umeng.socialize.controller.UMServiceFactory;
 import com.umeng.socialize.controller.UMSocialService;
 import com.umeng.socialize.controller.UMSsoHandler;
+import com.umeng.socialize.controller.listener.SocializeListeners.SnsPostListener;
 import com.umeng.socialize.sensor.UMSensor.OnSensorListener;
 import com.umeng.socialize.sensor.UMSensor.WhitchButton;
 import com.umeng.socialize.sensor.controller.UMShakeService;
@@ -131,6 +133,8 @@ public class MainActivity extends Activity implements
      */
     private UMSocialService mSocialController = UMServiceFactory
             .getUMSocialService(UMENG_DESCRIPTION, RequestType.SOCIAL);
+    
+    private SocializeConfig mSocializeConfig = SocializeConfig.getSocializeConfig() ;
     /**
      * 摇一摇控制器, 如果您在使用摇一摇功能时已经声明了UMSocialService对象，
      * 则摇一摇的描述符应与UMSocialService对象的一致,即UMENG_DESCRIPTION.
@@ -209,20 +213,21 @@ public class MainActivity extends Activity implements
     private void configSocialSso() {
 
         // 添加微信支持
-        mSocialController.getConfig().supportWXPlatform(MainActivity.this,
+        mSocializeConfig.supportWXPlatform(MainActivity.this,
                 "wx9f162ffbf5731350", "http://www.umeng.com/social");
-        mSocialController.getConfig().supportWXCirclePlatform(MainActivity.this,
+        mSocializeConfig.supportWXCirclePlatform(MainActivity.this,
                 "wx9f162ffbf5731350", "http://www.umeng.com/social");
         // 添加QQ平台， 并且设置SSO授权
-        mSocialController.getConfig().supportQQPlatform(MainActivity.this,
+        mSocializeConfig.supportQQPlatform(MainActivity.this,
                 "http://www.umeng.com/social");
         // 添加QQ空间的sso授权
-        mSocialController.getConfig().setSsoHandler(
+        mSocializeConfig.setSsoHandler(
                 new QZoneSsoHandler(MainActivity.this));
         // 添加腾讯微博的sso授权
-        mSocialController.getConfig().setSsoHandler(new TencentWBSsoHandler());
+        mSocializeConfig.setSsoHandler(new TencentWBSsoHandler());
         // 添加新浪微博的sso授权
-        mSocialController.getConfig().setSsoHandler(new SinaSsoHandler());
+        mSocializeConfig.setSsoHandler(new SinaSsoHandler());
+        mSocializeConfig.closeToast();
     }
 
     /**
@@ -382,7 +387,7 @@ public class MainActivity extends Activity implements
         platforms.add(SHARE_MEDIA.QZONE);
         platforms.add(SHARE_MEDIA.WEIXIN);
         platforms.add(SHARE_MEDIA.WEIXIN_CIRCLE);
-        platforms.add(SHARE_MEDIA.QQ);
+        platforms.add(SHARE_MEDIA.SMS);
         // 设置摇一摇分享的文字内容
         mShakeController.setShareContent("精彩瞬间，摇摇分享 -- 来自友盟社会化组件." + new Date().toString());
         // 注册摇一摇截屏分享， 自定义的VitamioAdapter,
@@ -467,25 +472,27 @@ public class MainActivity extends Activity implements
 
         @Override
         public void onStart() {
+            Toast.makeText(MainActivity.this, "开始分享", Toast.LENGTH_SHORT)
+                    .show();
         }
 
         @Override
         public void onActionComplete(SensorEvent arg0) {
-//            Toast.makeText(MainActivity.this, "用户摇一摇", Toast.LENGTH_SHORT)
-//                    .show();
+            // Toast.makeText(MainActivity.this, "用户摇一摇", Toast.LENGTH_SHORT)
+            // .show();
             // 暂停视频
             pause();
         }
 
         @Override
         public void onButtonClick(WhitchButton button) {
-//            if (button == WhitchButton.BUTTON_SHARE) {
-//                Toast.makeText(MainActivity.this, "用户点击分享按钮",
-//                        Toast.LENGTH_SHORT).show();
-//            } else {
-//                Toast.makeText(MainActivity.this, "用户点击取消按钮",
-//                        Toast.LENGTH_SHORT).show();
-//            }
+            // if (button == WhitchButton.BUTTON_SHARE) {
+            // Toast.makeText(MainActivity.this, "用户点击分享按钮",
+            // Toast.LENGTH_SHORT).show();
+            // } else {
+            // Toast.makeText(MainActivity.this, "用户点击取消按钮",
+            // Toast.LENGTH_SHORT).show();
+            // }
             // 重新开始
             play();
         }
@@ -525,7 +532,9 @@ public class MainActivity extends Activity implements
      */
     private void play() {
         Log.d(TAG, "### Click play button");
-        mMediaPlayer.start();
+        if (mMediaPlayer != null) {
+            mMediaPlayer.start();
+        }
         mPlayButton.setBackgroundResource(R.drawable.pause);
     }
 
@@ -539,7 +548,9 @@ public class MainActivity extends Activity implements
      */
     private void pause() {
         Log.d(TAG, "### Click pause button");
-        mMediaPlayer.pause();
+        if (mMediaPlayer != null) {
+            mMediaPlayer.pause();
+        }
         mPlayButton.setBackgroundResource(R.drawable.play);
     }
 
